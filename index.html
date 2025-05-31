@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Langton's Ant</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      color: white;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #controls {
+      margin-top: 10px;
+      background: #222;
+      padding: 10px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      align-items: center;
+    }
+    button {
+      background: #550000;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #aa0000;
+    }
+    input[type="range"] {
+      width: 150px;
+    }
+    canvas {
+      border: 1px solid #333;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <button id="start">Start</button>
+    <button id="pause">Pause</button>
+    <button id="reset">Reset</button>
+    <label for="speed">Speed:</label>
+    <input type="range" id="speed" min="1" max="100" value="50">
+  </div>
+
+  <canvas id="canvas" width="600" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const speedSlider = document.getElementById('speed');
+
+    const gridSize = 100;
+    const cellSize = canvas.width / gridSize;
+    let grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+    let running = false;
+    let intervalId;
+
+    const directions = ['up', 'right', 'down', 'left'];
+
+    let ant = {
+      x: Math.floor(gridSize / 2),
+      y: Math.floor(gridSize / 2),
+      direction: 'up'
+    };
+
+    function drawCell(x, y, state) {
+      ctx.fillStyle = state === 1 ? '#ff0000' : '#111';
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+
+    function moveAnt() {
+      const current = grid[ant.y][ant.x];
+
+      // Turn
+      if (current === 0) {
+        ant.direction = directions[(directions.indexOf(ant.direction) + 1) % 4];
+      } else {
+        ant.direction = directions[(directions.indexOf(ant.direction) + 3) % 4];
+      }
+
+      // Flip and draw
+      grid[ant.y][ant.x] = current === 0 ? 1 : 0;
+      drawCell(ant.x, ant.y, grid[ant.y][ant.x]);
+
+      // Move forward
+      switch (ant.direction) {
+        case 'up': ant.y = (ant.y - 1 + gridSize) % gridSize; break;
+        case 'right': ant.x = (ant.x + 1) % gridSize; break;
+        case 'down': ant.y = (ant.y + 1) % gridSize; break;
+        case 'left': ant.x = (ant.x - 1 + gridSize) % gridSize; break;
+      }
+    }
+
+    function drawGrid() {
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          drawCell(x, y, grid[y][x]);
+        }
+      }
+    }
+
+    function stepLoop() {
+      moveAnt();
+    }
+
+    function start() {
+      if (!running) {
+        running = true;
+        const interval = 101 - parseInt(speedSlider.value);
+        intervalId = setInterval(stepLoop, interval);
+      }
+    }
+
+    function pause() {
+      running = false;
+      clearInterval(intervalId);
+    }
+
+    function reset() {
+      pause();
+      grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(0));
+      ant = {
+        x: Math.floor(gridSize / 2),
+        y: Math.floor(gridSize / 2),
+        direction: 'up'
+      };
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      drawGrid();
+    }
+
+    // Event listeners
+    document.getElementById('start').addEventListener('click', start);
+    document.getElementById('pause').addEventListener('click', pause);
+    document.getElementById('reset').addEventListener('click', reset);
+    speedSlider.addEventListener('input', () => {
+      if (running) {
+        clearInterval(intervalId);
+        const interval = 101 - parseInt(speedSlider.value);
+        intervalId = setInterval(stepLoop, interval);
+      }
+    });
+
+    // Initial grid draw
+    reset();
+  </script>
+</body>
+</html>
